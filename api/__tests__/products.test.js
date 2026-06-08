@@ -1,7 +1,7 @@
-const request = require(class="tok-string">'supertest');
- 
-class=class="tok-string">"tok-comment">// Mock pg Pool before requiring app
-jest.mock(class="tok-string">'pg', () => {
+const request = require('supertest');
+
+// Mock pg Pool before requiring app
+jest.mock('pg', () => {
   const mockPool = {
     connect: jest.fn(),
     query: jest.fn(),
@@ -10,14 +10,14 @@ jest.mock(class="tok-string">'pg', () => {
   };
   return { Pool: jest.fn(() => mockPool) };
 });
- 
-const { Pool } = require(class="tok-string">'pg');
+
+const { Pool } = require('pg');
 const mockPool = new Pool();
-const app = require(class="tok-string">'../src/index');
- 
-describe(class="tok-string">'POST /api/products/order', () => {
+const app = require('../src/index');
+
+describe('POST /api/products/order', () => {
   let mockClient;
- 
+
   beforeEach(() => {
     mockClient = {
       query: jest.fn(),
@@ -25,44 +25,44 @@ describe(class="tok-string">'POST /api/products/order', () => {
     };
     mockPool.connect.mockResolvedValue(mockClient);
   });
- 
+
   afterEach(() => jest.clearAllMocks());
- 
-  it(class="tok-string">'should place an order and decrement stock', async () => {
-    class=class="tok-string">"tok-comment">// BEGIN
+
+  it('should place an order and decrement stock', async () => {
+    // BEGIN
     mockClient.query
-      .mockResolvedValueOnce({}) class=class="tok-string">"tok-comment">// BEGIN
-      .mockResolvedValueOnce({   class=class="tok-string">"tok-comment">// SELECT FOR UPDATE
-        rows: [{ id: 1, name: class="tok-string">'Widget', price: 10.00, stock: 50 }],
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({   // SELECT FOR UPDATE
+        rows: [{ id: 1, name: 'Widget', price: 10.00, stock: 50 }],
       })
-      .mockResolvedValueOnce({}) class=class="tok-string">"tok-comment">// UPDATE stock
-      .mockResolvedValueOnce({   class=class="tok-string">"tok-comment">// INSERT order
-        rows: [{ id: 1, product_id: 1, quantity: 2, total: 20.00, status: class="tok-string">'confirmed' }],
+      .mockResolvedValueOnce({}) // UPDATE stock
+      .mockResolvedValueOnce({   // INSERT order
+        rows: [{ id: 1, product_id: 1, quantity: 2, total: 20.00, status: 'confirmed' }],
       })
-      .mockResolvedValueOnce({}); class=class="tok-string">"tok-comment">// COMMIT
- 
+      .mockResolvedValueOnce({}); // COMMIT
+
     const res = await request(app)
-      .post(class="tok-string">'/api/products/order')
+      .post('/api/products/order')
       .send({ productId: 1, quantity: 2 });
- 
+
     expect(res.status).toBe(201);
     expect(res.body.order.total).toBe(20.00);
     expect(mockClient.query).toHaveBeenCalledTimes(5);
   });
- 
-  it(class="tok-string">'should return 409 when stock is insufficient', async () => {
+
+  it('should return 409 when stock is insufficient', async () => {
     mockClient.query
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({
-        rows: [{ id: 1, name: class="tok-string">'Widget', price: 10.00, stock: 1 }],
+        rows: [{ id: 1, name: 'Widget', price: 10.00, stock: 1 }],
       })
-      .mockResolvedValueOnce({}); class=class="tok-string">"tok-comment">// ROLLBACK
- 
+      .mockResolvedValueOnce({}); // ROLLBACK
+
     const res = await request(app)
-      .post(class="tok-string">'/api/products/order')
+      .post('/api/products/order')
       .send({ productId: 1, quantity: 5 });
- 
+
     expect(res.status).toBe(409);
-    expect(res.body.error).toBe(class="tok-string">'Insufficient stock');
+    expect(res.body.error).toBe('Insufficient stock');
   });
 });
