@@ -1,6 +1,6 @@
-const request = require(class="tok-string">'supertest');
- 
-jest.mock(class="tok-string">'pg', () => {
+const request = require('supertest');
+
+jest.mock('pg', () => {
   const mockPool = {
     connect: jest.fn(),
     query: jest.fn(),
@@ -9,34 +9,34 @@ jest.mock(class="tok-string">'pg', () => {
   };
   return { Pool: jest.fn(() => mockPool) };
 });
- 
-const { Pool } = require(class="tok-string">'pg');
+
+const { Pool } = require('pg');
 const mockPool = new Pool();
-const app = require(class="tok-string">'../src/index');
- 
-describe(class="tok-string">'Health endpoints', () => {
-  it(class="tok-string">'GET /health should return 200', async () => {
-    const res = await request(app).get(class="tok-string">'/health');
+const app = require('../src/index');
+
+describe('Health endpoints', () => {
+  it('GET /health should return 200', async () => {
+    const res = await request(app).get('/health');
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe(class="tok-string">'ok');
-    expect(res.body).toHaveProperty(class="tok-string">'uptime');
+    expect(res.body.status).toBe('ok');
+    expect(res.body).toHaveProperty('uptime');
   });
- 
-  it(class="tok-string">'GET /health/db should return 200 when DB is up', async () => {
+
+  it('GET /health/db should return 200 when DB is up', async () => {
     mockPool.query.mockResolvedValueOnce({
-      rows: [{ now: class="tok-string">'2025-01-01T00:00:00Z' }],
+      rows: [{ now: '2025-01-01T00:00:00Z' }],
     });
- 
-    const res = await request(app).get(class="tok-string">'/health/db');
+
+    const res = await request(app).get('/health/db');
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe(class="tok-string">'ok');
+    expect(res.body.status).toBe('ok');
   });
- 
-  it(class="tok-string">'GET /health/db should return 503 when DB is down', async () => {
-    mockPool.query.mockRejectedValueOnce(new Error(class="tok-string">'Connection refused'));
- 
-    const res = await request(app).get(class="tok-string">'/health/db');
+
+  it('GET /health/db should return 503 when DB is down', async () => {
+    mockPool.query.mockRejectedValueOnce(new Error('Connection refused'));
+
+    const res = await request(app).get('/health/db');
     expect(res.status).toBe(503);
-    expect(res.body.status).toBe(class="tok-string">'error');
+    expect(res.body.status).toBe('error');
   });
 });
