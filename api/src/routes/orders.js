@@ -34,15 +34,53 @@ router.get('/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT o.*, p.name AS product_name
-       FROM orders o JOIN products p ON p.id = o.product_id
+       FROM orders o
+       JOIN products p ON p.id = o.product_id
        WHERE o.id = $1`,
       [req.params.id]
     );
+
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Order not found' });
     }
+
     res.json(rows[0]);
   } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/orders — create order
+router.post('/', async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+
+    if (!productId || !quantity) {
+      return res.status(400).json({ error: 'productId and quantity are required' });
+    }
+
+    const productResult = await pool.query(
+      'SELECT id, name, price FROM products WHERE id = $1',
+      [productId]
+    );
+
+    if (productResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const product = productResult.rows[0];
+    const total = Number(product.price) * Number(quantity);
+
+    const orderResult = await pool.query(
+      `INSERT INTO orders (product_id, quantity, total, status)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, product_id, quantity, total, status, created_at`,
+      [productId, quantity, total, 'pending']
+    );
+
+    res.status(201).json(orderResult.rows[0]);
+  } catch (err) {
+    console.error('Error creating order:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
